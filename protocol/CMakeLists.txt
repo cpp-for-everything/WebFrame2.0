@@ -1,9 +1,15 @@
 cmake_minimum_required(VERSION 3.20)
 
-add_library(WebFrame_Protocol_Interface INTERFACE inc/interface.h inc/platform.h)
-target_compile_features(WebFrame_Protocol_Interface INTERFACE cxx_std_23)
-target_include_directories(WebFrame_Protocol_Interface INTERFACE inc/)
+add_library(WebFrame_Client_Handler_Interface INTERFACE inc/handlers/http/interface/client_handler.h inc/platform.h)
+target_compile_features(WebFrame_Client_Handler_Interface INTERFACE cxx_std_23)
+target_include_directories(WebFrame_Client_Handler_Interface INTERFACE inc/)
+target_link_libraries(WebFrame_Client_Handler_Interface)
 
-add_library(WebFrame_Protocol_HTTP_1_0 STATIC inc/http/1.0.hpp src/http/1.0.cpp)
-target_compile_features(WebFrame_Protocol_HTTP_1_0 PUBLIC cxx_std_23)
-target_link_libraries(WebFrame_Protocol_HTTP_1_0 PUBLIC WebFrame_Protocol_Interface)
+add_library(WebFrame_Protocol_Interface STATIC src/server/interface.cpp inc/server/interface.h inc/platform.h inc/generator.h)
+target_compile_features(WebFrame_Protocol_Interface PUBLIC cxx_std_23)
+target_include_directories(WebFrame_Protocol_Interface PUBLIC inc/)
+target_link_libraries(WebFrame_Protocol_Interface PUBLIC WebFrame_SyncLog WebFrame_Client_Handler_Interface)
+
+add_library(WebFrame_Protocol_HTTP1_0 STATIC inc/server/http/1.0.hpp src/server/http/1.0.cpp)
+target_compile_features(WebFrame_Protocol_HTTP1_0 PUBLIC cxx_std_23)
+target_link_libraries(WebFrame_Protocol_HTTP1_0 PUBLIC WebFrame_Protocol_Interface)
