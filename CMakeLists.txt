@@ -23,7 +23,7 @@ if(DOC)
     configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT})
 
     # Add a custom target for generating documentation
-    add_custom_target(doc ALL
+    add_custom_target(doc
         COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         COMMENT "Generating API documentation with Doxygen"
@@ -38,3 +38,7 @@ if(DOC)
         COMMENT "Building PDF documentation from LaTeX"
     )
 endif()
+
+add_subdirectory(src/boot_server)
+add_subdirectory(src/protocol_handler)
+add_subdirectory(test/playground)
