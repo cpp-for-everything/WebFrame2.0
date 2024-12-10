@@ -81,6 +81,7 @@
         "vector": "cpp",
         "__nullptr": "cpp",
         "__string": "cpp",
-        "chrono": "cpp"
+        "chrono": "cpp",
+        "iomanip": "cpp"
     }
 }

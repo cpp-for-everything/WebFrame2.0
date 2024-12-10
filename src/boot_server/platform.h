@@ -7,7 +7,19 @@
 #include <time.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <mswsock.h>
+#include <windows.h>
 #pragma comment(lib, "ws2_32.lib")
+
+struct IOCPData {
+	OVERLAPPED overlapped;
+	SOCKET socket;
+	WSABUF buffer;
+	char data[1024];
+	sockaddr_in clientAddr;
+	int addrLen;
+	bool isUDP;
+};
 #else
 #include <fcntl.h>
 #include <netdb.h>
