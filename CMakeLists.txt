@@ -27,8 +27,6 @@ if(DOC)
         COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         COMMENT "Generating API documentation with Doxygen"
-
-        # VERBATIM
     )
 
     # Add a custom command to generate the PDF
@@ -38,6 +36,12 @@ if(DOC)
         COMMENT "Building PDF documentation from LaTeX"
     )
 endif()
+
+# Add nghttp2 submodule
+add_subdirectory(external/nghttp2)
+
+# Include nghttp2 headers
+include_directories(external/nghttp2/lib/includes)
 
 add_subdirectory(src/boot_server)
 add_subdirectory(src/protocol_handler)

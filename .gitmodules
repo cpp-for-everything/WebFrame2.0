@@ -1,0 +1,3 @@
+[submodule "external/nghttp2"]
+	path = external/nghttp2
+	url = https://github.com/nghttp2/nghttp2.git
