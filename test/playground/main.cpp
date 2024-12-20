@@ -3,8 +3,7 @@
 
 int main() {
 	protocol::ProtocolManager pm;
-	boot::server server;
+	boot::server server(pm);
 	server.bind_to(8081);
-	server.set_handler(&pm);
 	server.start();
 }

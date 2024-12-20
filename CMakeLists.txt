@@ -1,16 +1,16 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.18)
 project("WebFrame++" VERSION 1.0.0.0 LANGUAGES CXX)
 
 option(TEMPLATE_ENGINE "Template engine to be used." OFF)
 option(WITH_TESTS "Compile unit and integration tests targets" ON)
 option(WITH_BENCHMARKS "Compile benchmark targets" ON)
 
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 20)
 set(CMKAE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-option(DOC "Enables/Disables the documentation target" ON)
+option(DOC "Enables/Disables the documentation target" OFF)
 
 if(DOC)
     find_package(Doxygen REQUIRED)

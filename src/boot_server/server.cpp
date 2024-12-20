@@ -4,20 +4,11 @@
 #include <vector>
 
 namespace boot {
-	size_t server::id = 0;
-	server::server() {
+	server::server(protocol::abstract::ProtocolManager& _protocolManager) : iserver(_protocolManager) {
 #if defined(__linux__) || defined(__APPLE__)
 		tcp_socket = socket(AF_INET, SOCK_STREAM, 0);
 		udp_socket = socket(AF_INET, SOCK_DGRAM, 0);
 #else
-		if (id == 0) {
-			WSADATA wsaData;
-			int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
-			if (iResult != NO_ERROR) {
-				throw exceptions::io_exception("WSAStartup failed with error");
-			}
-			std::cout << "WSAStartup done" << std::endl;
-		}
 		tcp_socket = WSASocketW(AF_INET, SOCK_STREAM, 0, nullptr, 0, WSA_FLAG_OVERLAPPED);
 		udp_socket = WSASocketW(AF_INET, SOCK_DGRAM, 0, nullptr, 0, WSA_FLAG_OVERLAPPED);
 #endif
@@ -27,8 +18,6 @@ namespace boot {
 		if (udp_socket == INVALID_SOCKET) {
 			throw exceptions::io_exception("Unable to create UDP socket");
 		}
-		protocolManager = nullptr;
-		id++;
 	}
 
 	void server::bind_to(size_t port) {
@@ -46,14 +35,7 @@ namespace boot {
 		}
 	}
 
-	void server::set_handler(protocol::abstract::ProtocolManager* _protocolManager) {
-		this->protocolManager = _protocolManager;
-	}
-
 	void server::start() {
-		if (protocolManager == nullptr) {
-			throw exceptions::runtime_exception("Protocol Manager is uninitialied. Server is getting shut down.");
-		}
 #ifdef __linux__
 		// Set non-blocking
 		nonblock_config(tcp_socket);
@@ -61,11 +43,19 @@ namespace boot {
 
 		listen(tcp_socket, SOMAXCONN);
 		listen(udp_socket, SOMAXCONN);
+		const int MAX_EVENTS = 100000;
 		// Add sockets to epoll
 		epoll_event event{}, events[MAX_EVENTS];
 		event.events = EPOLLIN;
 
 		event.data.fd = tcp_socket;
+		
+		int epoll_fd = epoll_create1(0);
+		if (epoll_fd < 0) {
+			std::cerr << "Failed to create epoll instance.\n";
+			return;
+		}
+
 		epoll_ctl(epoll_fd, EPOLL_CTL_ADD, tcp_socket, &event);
 
 		event.data.fd = udp_socket;
@@ -82,7 +72,8 @@ namespace boot {
 						if (getsockopt(client, SOL_SOCKET, SO_TYPE, &type, &optlen) == -1) {
 							throw exceptions::runtime_exception("getsockopt failed");
 						}
-						protocolManager->handle_client(client);
+						nonblock_config(client);
+						protocolManager.handle_client(client, events[i].data.fd == tcp_socket ? SOCK_STREAM : SOCK_DGRAM);
 					}
 				}
 			}
@@ -91,7 +82,9 @@ namespace boot {
 		close(tcp_socket);
 		close(udp_socket);
 		close(epoll_fd);
-#elifdef __APPLE__
+		tcp_socket = udp_socket = INVALID_SOCKET;
+#else
+#ifdef __APPLE__
 		int kq = kqueue();
 		if (kq == -1) {
 			throw exceptions::io_exception("Failed to create kqueue.");
@@ -114,6 +107,7 @@ namespace boot {
 			close(tcp_socket);
 			close(udp_socket);
 			close(kq);
+			tcp_socket = udp_socket = INVALID_SOCKET;
 			return;
 		}
 
@@ -128,7 +122,7 @@ namespace boot {
 			}
 
 			for (int i = 0; i < n; ++i) {
-				std::cout << events[i].ident << " " << std::hex << events[i].flags << std::endl;
+				// std::cout << events[i].ident << " " << std::hex << events[i].flags << std::endl;
 				if (events[i].flags & EVFILT_READ) {
 					SOCKET client = ACCEPT(events[i].ident, NULL, NULL);
 					if (client == INVALID_SOCKET) {
@@ -154,7 +148,8 @@ namespace boot {
 						if (getsockopt(client, SOL_SOCKET, SO_TYPE, &type, &optlen) == -1) {
 							throw exceptions::runtime_exception("getsockopt failed");
 						}
-						protocolManager->handle_client(client, type);
+						nonblock_config(client);
+						protocolManager.handle_client(client, type);
 					}
 				}
 			}
@@ -163,6 +158,7 @@ namespace boot {
 		close(tcp_socket);
 		close(udp_socket);
 		close(kq);
+		tcp_socket = udp_socket = INVALID_SOCKET;
 #else
 		// Set non-blocking
 		nonblock_config(tcp_socket);
@@ -178,7 +174,6 @@ namespace boot {
 		    {udp_socket, POLLRDNORM, 0}   // UDP listener
 		};
 
-		char buffer[1024];
 		sockaddr_in clientAddr;
 		int addrLen = sizeof(clientAddr);
 
@@ -198,35 +193,24 @@ namespace boot {
 						if (clientSocket != INVALID_SOCKET) {
 							std::cout << "New TCP connection from " << inet_ntoa(clientAddr.sin_addr) << ":"
 							          << ntohs(clientAddr.sin_port) << "\n";
-							this->protocolManager->handle_client(clientSocket, SOCK_STREAM);
+							this->protocolManager.handle_client(clientSocket, SOCK_STREAM);
 						}
 					} else if (pfd.fd == udp_socket) {
 						// UDP: Accept new connections
 						SOCKET clientSocket = accept(udp_socket, (sockaddr*)&clientAddr, &addrLen);
 						if (clientSocket != INVALID_SOCKET) {
+							nonblock_config(clientSocket);
 							std::cout << "UDP message from " << inet_ntoa(clientAddr.sin_addr) << ":"
 							          << ntohs(clientAddr.sin_port) << "\n";
-							this->protocolManager->handle_client(clientSocket, SOCK_DGRAM);
+							this->protocolManager.handle_client(clientSocket, SOCK_DGRAM);
 						}
 					}
 				}
 			}
 		}
 #endif
-	}
-
-	server::~server() {
-		id--;
-#ifdef _WIN32
-		closesocket(tcp_socket);
-		closesocket(udp_socket);
-		if (id == 0) {
-			WSACleanup();
-			std::cout << "WSACleanup done" << std::endl;
-		}
-#else
-		close(tcp_socket);
-		close(udp_socket);
 #endif
 	}
+
+	server::~server() {}
 }  // namespace boot

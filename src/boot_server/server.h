@@ -3,9 +3,7 @@
 
 #include <stdexcept>
 #include <ios>
-#include <boot_server/platform.h>
-
-#include <boot_server/protocol_manager.h>
+#include <boot_server/iserver.h>
 
 namespace boot {
 	namespace exceptions {
@@ -20,18 +18,12 @@ namespace boot {
 		};
 	}  // namespace exceptions
 
-	class server {
-		SOCKET tcp_socket = INVALID_SOCKET;
-		SOCKET udp_socket = INVALID_SOCKET;
-		protocol::abstract::ProtocolManager* protocolManager = nullptr;
-		static size_t id;
-
+	class server : public iserver {
 	public:
-		server();
+		server(protocol::abstract::ProtocolManager& _protocolManager);
 		~server();
 		void bind_to(size_t port);
-		void set_handler(protocol::abstract::ProtocolManager* _protocolManager);
-		void start();
+		virtual void start() override final;
 	};
 }  // namespace boot
 
