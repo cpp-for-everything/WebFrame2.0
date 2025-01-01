@@ -7,14 +7,17 @@
 #include <fcntl.h>
 #include <cstring>
 
-void setNonBlocking(int sock) {
+void setNonBlocking(int sock)
+{
 	int flags = fcntl(sock, F_GETFL, 0);
 	fcntl(sock, F_SETFL, flags | O_NONBLOCK);
 }
 
-void runKqueue() {
+void runKqueue()
+{
 	int kq = kqueue();
-	if (kq == -1) {
+	if (kq == -1)
+	{
 		std::cerr << "Failed to create kqueue.\n";
 		return;
 	}
@@ -23,7 +26,8 @@ void runKqueue() {
 	int socket1 = socket(AF_INET, SOCK_STREAM, 0);
 	int socket2 = socket(AF_INET, SOCK_STREAM, 0);
 
-	if (socket1 < 0 || socket2 < 0) {
+	if (socket1 < 0 || socket2 < 0)
+	{
 		std::cerr << "Socket creation failed.\n";
 		return;
 	}
@@ -54,7 +58,8 @@ void runKqueue() {
 	EV_SET(&changes[0], socket1, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, nullptr);
 	EV_SET(&changes[1], socket2, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, nullptr);
 
-	if (kevent(kq, changes, 2, nullptr, 0, nullptr) == -1) {
+	if (kevent(kq, changes, 2, nullptr, 0, nullptr) == -1)
+	{
 		std::cerr << "Failed to register events with kqueue.\n";
 		close(socket1);
 		close(socket2);
@@ -65,19 +70,24 @@ void runKqueue() {
 	std::cout << "Kqueue server listening on ports 8080 and 8081...\n";
 
 	// Event loop
-	while (true) {
+	while (true)
+	{
 		struct kevent events[10];
 		int n = kevent(kq, nullptr, 0, events, 10, nullptr);
 
-		if (n < 0) {
+		if (n < 0)
+		{
 			std::cerr << "kevent error.\n";
 			break;
 		}
 
-		for (int i = 0; i < n; ++i) {
-			if (events[i].flags & EVFILT_READ) {
+		for (int i = 0; i < n; ++i)
+		{
+			if (events[i].flags & EVFILT_READ)
+			{
 				int client = accept(events[i].ident, nullptr, nullptr);
-				if (client >= 0) {
+				if (client >= 0)
+				{
 					std::cout << "Connection on socket " << events[i].ident << ".\n";
 					close(client);
 				}

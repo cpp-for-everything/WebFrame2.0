@@ -11,7 +11,8 @@
 #include <windows.h>
 #pragma comment(lib, "ws2_32.lib")
 
-struct IOCPData {
+struct IOCPData
+{
 	OVERLAPPED overlapped;
 	SOCKET socket;
 	WSABUF buffer;
@@ -32,15 +33,18 @@ struct IOCPData {
 #include <unistd.h>
 #ifdef __APPLE__
 #include <sys/event.h>
+#include <arpa/inet.h>
 #else
 #include <sys/epoll.h>
+#include <arpa/inet.h>
 #endif
 #endif
 
 #include <limits.h>
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /*---------------------------------------------------------------------------*/
@@ -54,36 +58,37 @@ extern "C" {
 #endif
 
 #if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
-typedef unsigned char uint8;
-typedef char int8;
-typedef unsigned short uint16;
-typedef short int16;
-typedef unsigned int uint32;
-typedef int int32;
-typedef int SOCKET;
+	typedef unsigned char uint8;
+	typedef char int8;
+	typedef unsigned short uint16;
+	typedef short int16;
+	typedef unsigned int uint32;
+	typedef int int32;
+	typedef int SOCKET;
 #endif
 
 #ifdef _WIN32
-struct iovec {
-	void* iov_base;
-	size_t iov_len;
-};
+	struct iovec
+	{
+		void* iov_base;
+		size_t iov_len;
+	};
 
-typedef unsigned char uint8;
-typedef char int8;
-typedef unsigned short uint16;
-typedef short int16;
-typedef unsigned int uint32;
-typedef int int32;
+	typedef unsigned char uint8;
+	typedef char int8;
+	typedef unsigned short uint16;
+	typedef short int16;
+	typedef unsigned int uint32;
+	typedef int int32;
 #endif
 
 #ifdef _WIN32
-typedef int socklen_t;
+	typedef int socklen_t;
 #endif
 
 #if defined(_WIN32)
-typedef unsigned long long int uint64;
-typedef long long int int64;
+	typedef unsigned long long int uint64;
+	typedef long long int int64;
 #elif (__WORDSIZE == 32)
 __extension__ typedef long long int int64;
 __extension__ typedef unsigned long long int uint64;
@@ -250,8 +255,10 @@ typedef long int int64;
 }
 #endif
 
-inline void* get_in_addr(struct sockaddr* sa) {
-	if (sa->sa_family == AF_INET) {
+inline void* get_in_addr(struct sockaddr* sa)
+{
+	if (sa->sa_family == AF_INET)
+	{
 		return &(((struct sockaddr_in*)sa)->sin_addr);
 	}
 
@@ -281,20 +288,24 @@ inline void* get_in_addr(struct sockaddr* sa) {
 #endif
 
 #ifdef _WIN32
-inline int nonblock_config(SOCKET s) {
+inline int nonblock_config(SOCKET s)
+{
 	u_long iMode = 1;
 	return ioctlsocket(s, FIONBIO, &iMode);
 }
-inline int block_config(SOCKET socket) {
+inline int block_config(SOCKET socket)
+{
 	u_long iMode = 0;
 	return ioctlsocket(socket, FIONBIO, &iMode);
 }
 #endif
 #if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
 inline int nonblock_config(SOCKET s) { return fcntl(s, F_SETFL, O_NONBLOCK); }
-inline int block_config(SOCKET socket) {
+inline int block_config(SOCKET socket)
+{
 	const int flags = fcntl(socket, F_GETFL, 0);
-	if (!(flags & O_NONBLOCK)) {
+	if (!(flags & O_NONBLOCK))
+	{
 		return 0;
 	}
 	return fcntl(socket, F_SETFL, flags ^ O_NONBLOCK);

@@ -3,11 +3,21 @@
 
 #include <boot_server/platform.h>
 
-namespace protocol {
-	namespace abstract {
-		class ProtocolManager {
+namespace boot
+{
+	class ClientManager;
+}
+
+namespace protocol
+{
+	namespace abstract
+	{
+		class ProtocolManager
+		{
 		public:
-			virtual void handle_client(SOCKET client, short server_type) = 0;
+			virtual void handle_tcp_client(SOCKET client, sockaddr_in clientAddr) = 0;
+			virtual void handle_udp_client(SOCKET client, sockaddr_in clientAddr) = 0;
+			virtual void bind_to(boot::ClientManager&) = 0;
 		};
 	}  // namespace abstract
 }  // namespace protocol

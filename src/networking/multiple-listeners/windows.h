@@ -4,9 +4,11 @@
 #include <windows.h>
 #include <mswsock.h>
 
-void runIOCP() {
+void runIOCP()
+{
 	WSADATA wsaData;
-	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
+	{
 		std::cerr << "WSAStartup failed\n";
 		return;
 	}
@@ -15,7 +17,8 @@ void runIOCP() {
 	SOCKET socket1 = WSASocket(AF_INET, SOCK_STREAM, 0, nullptr, 0, WSA_FLAG_OVERLAPPED);
 	SOCKET socket2 = WSASocket(AF_INET, SOCK_STREAM, 0, nullptr, 0, WSA_FLAG_OVERLAPPED);
 
-	if (socket1 == INVALID_SOCKET || socket2 == INVALID_SOCKET) {
+	if (socket1 == INVALID_SOCKET || socket2 == INVALID_SOCKET)
+	{
 		std::cerr << "Socket creation failed.\n";
 		WSACleanup();
 		return;
@@ -39,7 +42,8 @@ void runIOCP() {
 
 	// Create IOCP
 	HANDLE iocp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 0);
-	if (!iocp) {
+	if (!iocp)
+	{
 		std::cerr << "Failed to create IOCP.\n";
 		closesocket(socket1);
 		closesocket(socket2);
@@ -54,14 +58,17 @@ void runIOCP() {
 	std::cout << "IOCP server listening on ports 8080 and 8081...\n";
 
 	// Worker thread
-	while (true) {
+	while (true)
+	{
 		DWORD bytesTransferred;
 		ULONG_PTR completionKey;
 		OVERLAPPED* overlapped;
 
-		if (GetQueuedCompletionStatus(iocp, &bytesTransferred, &completionKey, &overlapped, INFINITE)) {
+		if (GetQueuedCompletionStatus(iocp, &bytesTransferred, &completionKey, &overlapped, INFINITE))
+		{
 			SOCKET client = (SOCKET)completionKey;
-			if (client != INVALID_SOCKET) {
+			if (client != INVALID_SOCKET)
+			{
 				std::cout << "Connection on socket " << client << ".\n";
 				closesocket(client);
 			}

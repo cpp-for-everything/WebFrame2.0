@@ -5,15 +5,18 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-void setNonBlocking(int sock) {
+void setNonBlocking(int sock)
+{
 	int flags = fcntl(sock, F_GETFL, 0);
 	fcntl(sock, F_SETFL, flags | O_NONBLOCK);
 }
 
-void runEpoll() {
+void runEpoll()
+{
 	const int MAX_EVENTS = 10;
 	int epoll_fd = epoll_create1(0);
-	if (epoll_fd < 0) {
+	if (epoll_fd < 0)
+	{
 		std::cerr << "Failed to create epoll instance.\n";
 		return;
 	}
@@ -22,7 +25,8 @@ void runEpoll() {
 	int socket1 = socket(AF_INET, SOCK_STREAM, 0);
 	int socket2 = socket(AF_INET, SOCK_STREAM, 0);
 
-	if (socket1 < 0 || socket2 < 0) {
+	if (socket1 < 0 || socket2 < 0)
+	{
 		std::cerr << "Socket creation failed.\n";
 		return;
 	}
@@ -60,12 +64,16 @@ void runEpoll() {
 
 	std::cout << "Epoll server listening on ports 8080 and 8081...\n";
 
-	while (true) {
+	while (true)
+	{
 		int n = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
-		for (int i = 0; i < n; ++i) {
-			if (events[i].events & EPOLLIN) {
+		for (int i = 0; i < n; ++i)
+		{
+			if (events[i].events & EPOLLIN)
+			{
 				int client = accept(events[i].data.fd, nullptr, nullptr);
-				if (client >= 0) {
+				if (client >= 0)
+				{
 					std::cout << "Connection on socket " << events[i].data.fd << ".\n";
 					close(client);
 				}

@@ -97,6 +97,61 @@
         "set": "cpp",
         "span": "cpp",
         "stack": "cpp",
-        "unordered_set": "cpp"
-    }
+        "unordered_set": "cpp",
+        "*.tcc": "cpp",
+        "functional": "cpp",
+        "memory_resource": "cpp",
+        "numeric": "cpp",
+        "random": "cpp",
+        "ranges": "cpp"
+    },
+    "diffEditor.ignoreTrimWhitespace": false,
+    "[cpp]": {
+        "editor.defaultFormatter": "coder-of-worlds.env-var-clang-format"
+    },
+    "[javascript]": {
+        "editor.defaultFormatter": "vscode.typescript-language-features"
+    },
+    "C_Cpp.intelliSenseEngine": "default",
+    "C_Cpp.default.cppStandard": "c++20",
+    "C_Cpp.default.cStandard": "c17",
+    "C_Cpp.default.intelliSenseMode": "clang-x64",
+    "clang-format.style": "file:${workspaceFolder}/.clang-format",
+    "clang-format.fallbackStyle": "Microsoft",
+    "clang-format.assumeFilename": "${fileNoExtension}.cpp",
+    "clang-format.language.cpp.enable": true,
+    "editor.formatOnSave": true,
+    "cmake.pinnedCommands": [
+        "workbench.action.tasks.configureTaskRunner",
+        "workbench.action.tasks.runTask"
+    ],
+    "cmake.options.statusBarVisibility": "visible",
+    "cmake.options.advanced": {
+        "build": {
+            "statusBarVisibility": "inherit",
+            "inheritDefault": "visible"
+        },
+        "launch": {
+            "statusBarVisibility": "inherit",
+            "inheritDefault": "visible"
+        },
+        "debug": {
+            "statusBarVisibility": "inherit",
+            "inheritDefault": "visible"
+        }
+    },
+    "doxdocgen.generic.authorName": "Alex Tsvetanov",
+    "doxdocgen.generic.splitCasingSmartText": false,
+    "[json]": {
+        "editor.defaultFormatter": "vscode.json-language-features"
+    },
+    "terminal.integrated.defaultProfile.windows": "Git Bash",
+    "C_Cpp.default.compilerPath": "/usr/bin/clang++",
+    "window.zoomLevel": 1,
+    "cmake.showOptionsMovedNotification": false,
+    "editor.rulers": [],
+    "C_Cpp.autocompleteAddParentheses": true,
+    "clang-format.executable.linux": "clang-format-16",
+    "clang-format.executable.osx": "clang-format",
+    //"clang-format.executable": "clang-format",
 }
