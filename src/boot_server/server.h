@@ -9,21 +9,6 @@
 
 namespace boot
 {
-	namespace exceptions
-	{
-		class io_exception : public std::ios_base::failure
-		{
-		public:
-			inline io_exception(const std::string& what_arg) : failure(what_arg) {}
-		};
-
-		class runtime_exception : public std::runtime_error
-		{
-		public:
-			inline runtime_exception(const std::string& what_arg) : runtime_error(what_arg) {}
-		};
-	}  // namespace exceptions
-
 	class server : public iserver
 	{
 	public:
@@ -33,7 +18,7 @@ namespace boot
 		virtual void start() override final;
 
 	private:
-		void submit_client_to_handler(SOCKET client, sockaddr_in clientAddr, short type);
+		void submit_client_to_handler(SOCKET client, short type);
 	};
 }  // namespace boot
 

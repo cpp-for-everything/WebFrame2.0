@@ -44,13 +44,15 @@ namespace boot
 						SOCKET client = ACCEPT(events[i].data.fd, (sockaddr*)&clientAddr, &addrLen);
 						event.data.fd = client;
 						epoll_ctl(epoll_fd, EPOLL_CTL_ADD, event.data.fd, &event);
-						submit_client_to_handler(client, clientAddr, SOCK_STREAM);
+						submit_client_to_handler(client, SOCK_STREAM);
 					}
 					else if (events[i].data.fd == udp_socket)  // UDP message sent
 					{
+						submit_client_to_handler(client, SOCK_DGRAM);
 					}
 					else  // TCP client event
 					{
+						submit_client_to_handler(events[i].data.fd, SOCK_STREAM);
 					}
 				}
 			}

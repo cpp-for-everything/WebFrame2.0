@@ -4,10 +4,27 @@
 #include <boot_server/platform.h>
 #include <utils/queue.h>
 #include <boot_server/protocol_manager.h>
+#include <boot_server/protocol_manager.h>
 #include <chrono>
+#include <unordered_map>
 
 namespace boot
 {
+	namespace exceptions
+	{
+		class io_exception : public std::ios_base::failure
+		{
+		public:
+			inline io_exception(const std::string& what_arg) : failure(what_arg) {}
+		};
+
+		class runtime_exception : public std::runtime_error
+		{
+		public:
+			inline runtime_exception(const std::string& what_arg) : runtime_error(what_arg) {}
+		};
+	}  // namespace exceptions
+
 	enum ServerStatus
 	{
 		NOT_STARTED,
@@ -52,12 +69,12 @@ namespace boot
 				clientLastActivity[client] = lastActivity;
 			}
 		}
-		std::chrono::time_point<std::chrono::system_clock> get_last_activity(SOCKET client) const
+		std::chrono::time_point<std::chrono::system_clock> get_last_activity(SOCKET client)
 		{
 			std::lock_guard lk(m);
 			return clientLastActivity.find(client)->second;
 		}
-		ClientStatus get_status(SOCKET client) const
+		ClientStatus get_status(SOCKET client)
 		{
 			std::lock_guard lk(m);
 			return clientStatus.find(client)->second;

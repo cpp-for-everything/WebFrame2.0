@@ -65,6 +65,7 @@ extern "C"
 	typedef unsigned int uint32;
 	typedef int int32;
 	typedef int SOCKET;
+	typedef int opt_val_t;
 #endif
 
 #ifdef _WIN32
@@ -80,6 +81,7 @@ extern "C"
 	typedef short int16;
 	typedef unsigned int uint32;
 	typedef int int32;
+	typedef char opt_val_t;
 #endif
 
 #ifdef _WIN32

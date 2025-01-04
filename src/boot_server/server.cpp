@@ -11,8 +11,8 @@ namespace boot
 		tcp_socket = socket(AF_INET, SOCK_STREAM, 0);
 		udp_socket = socket(AF_INET, SOCK_DGRAM, 0);
 #else
-		tcp_socket = WSASocketW(AF_INET, SOCK_STREAM, 0, nullptr, 0, WSA_FLAG_OVERLAPPED);
-		udp_socket = WSASocketW(AF_INET, SOCK_DGRAM, 0, nullptr, 0, WSA_FLAG_OVERLAPPED);
+		tcp_socket = WSASocketW(AF_INET, SOCK_STREAM, IPPROTO_TCP, nullptr, 0, WSA_FLAG_OVERLAPPED);
+		udp_socket = WSASocketW(AF_INET, SOCK_DGRAM, IPPROTO_UDP, nullptr, 0, WSA_FLAG_OVERLAPPED);
 #endif
 		try
 		{
@@ -59,9 +59,8 @@ namespace boot
 		}
 	}
 
-	void server::submit_client_to_handler(SOCKET client, sockaddr_in clientAddr, short type)
+	void server::submit_client_to_handler(SOCKET client, short type)
 	{
-		std::cout << "Message from " << inet_ntoa(clientAddr.sin_addr) << ":" << ntohs(clientAddr.sin_port) << "\n";
 		if (client == INVALID_SOCKET)
 		{
 			return;
@@ -82,161 +81,27 @@ namespace boot
 				return;
 			}
 
-			int type;
-			socklen_t optlen = sizeof(type);
-			if (getsockopt(client, SOL_SOCKET, SO_TYPE, &type, &optlen) == -1)
-			{
-				throw exceptions::runtime_exception("getsockopt failed");
-			}
+			//opt_val_t type;
+			//socklen_t optlen = sizeof(type);
+			//if (getsockopt(client, SOL_SOCKET, SO_TYPE, &type, &optlen) == -1)
+			//{
+			//	throw exceptions::runtime_exception("getsockopt failed");
+			//}
 			nonblock_config(client);
-			protocolManager.handle_client(client, clientAddr, type);
 		}
-	}
-
-	void server::start()
-	{
-		// Set non-blocking
-		nonblock_config(tcp_socket);
-		nonblock_config(udp_socket);
-
-		listen(tcp_socket, SOMAXCONN);
-		listen(udp_socket, SOMAXCONN);
-#ifdef __linux__
-		const int MAX_EVENTS = 100000;
-		// Add sockets to epoll
-		epoll_event event{}, events[MAX_EVENTS];
-		event.events = EPOLLIN;
-
-		event.data.fd = tcp_socket;
-
-		int epoll_fd = epoll_create1(0);
-		if (epoll_fd < 0)
+		if (type == SOCK_STREAM)  // TCP client
 		{
-			std::cerr << "Failed to create epoll instance.\n";
-			return;
+			protocolManager.handle_tcp_client(client);
 		}
-
-		epoll_ctl(epoll_fd, EPOLL_CTL_ADD, tcp_socket, &event);
-
-		event.data.fd = udp_socket;
-		epoll_ctl(epoll_fd, EPOLL_CTL_ADD, udp_socket, &event);
-
-		sockaddr_in clientAddr;
-		socklen_t addrLen = sizeof(clientAddr);
-
-		while (true)
+		else if (type == SOCK_DGRAM)  // UDP message
 		{
-			int n = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
-			for (int i = 0; i < n; ++i)
-			{
-				if (events[i].events & EPOLLIN)
-				{
-					int client = ACCEPT(events[i].data.fd, (sockaddr*)&clientAddr, &addrLen);
-
-					submit_client_to_handler(client, clientAddr,
-					                         events[i].data.fd == tcp_socket ? SOCK_STREAM : SOCK_DGRAM);
-				}
-			}
+			protocolManager.handle_udp_client(client);
 		}
-
-		CLOSE(epoll_fd);
-#else
-#ifdef __APPLE__
-		int kq = kqueue();
-		if (kq == -1)
-		{
-			throw exceptions::io_exception("Failed to create kqueue.");
-			return;
-		}
-
-		struct kevent changes[2];
-		EV_SET(&changes[0], tcp_socket, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, nullptr);
-		EV_SET(&changes[1], udp_socket, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, nullptr);
-
-		if (kevent(kq, changes, 2, nullptr, 0, nullptr) == -1)
-		{
-			throw exceptions::io_exception("Failed to register events with kqueue.");
-			CLOSE(tcp_socket);
-			CLOSE(udp_socket);
-			CLOSE(kq);
-			tcp_socket = udp_socket = INVALID_SOCKET;
-			return;
-		}
-
-		sockaddr_in clientAddr;
-		socklen_t addrLen = sizeof(clientAddr);
-
-		// Event loop
-		while (true)
-		{
-			struct kevent events[10];
-			int n = kevent(kq, nullptr, 0, events, 10, nullptr);
-
-			if (n < 0)
-			{
-				throw exceptions::runtime_exception("kevent error.\n");
-				break;
-			}
-
-			for (int i = 0; i < n; ++i)
-			{
-				if (events[i].flags & EVFILT_READ)
-				{
-					SOCKET client = ACCEPT(events[i].ident, (sockaddr*)&clientAddr, &addrLen);
-
-					submit_client_to_handler(client, clientAddr,
-					                         events[i].data.fd == tcp_socket ? SOCK_STREAM : SOCK_DGRAM);
-				}
-			}
-		}
-
-		CLOSE(kq);
-#else
-		std::vector<WSAPOLLFD> pollFds = {
-		    {tcp_socket, POLLRDNORM, 0},  // TCP listener
-		    {udp_socket, POLLRDNORM, 0}   // UDP listener
-		};
-
-		sockaddr_in clientAddr;
-		socklen_t addrLen = sizeof(clientAddr);
-
-		while (true)
-		{
-			// Poll the sockets
-			int ret = WSAPoll(pollFds.data(), pollFds.size(), -1);  // Infinite timeout
-			if (ret == SOCKET_ERROR)
-			{
-				std::cerr << "WSAPoll failed\n";
-				break;
-			}
-
-			for (auto& pfd : pollFds)
-			{
-				if (pfd.revents & POLLRDNORM)
-				{
-					if (pfd.fd == tcp_socket)
-					{
-						// TCP: Accept new connections
-						SOCKET clientSocket = ACCEPT(tcp_socket, (sockaddr*)&clientAddr, &addrLen);
-						submit_client_to_handler(client, clientAddr,
-						                         events[i].data.fd == tcp_socket ? SOCK_STREAM : SOCK_DGRAM);
-					}
-					else if (pfd.fd == udp_socket)
-					{
-						// UDP: Accept new connections
-						SOCKET clientSocket = ACCEPT(udp_socket, (sockaddr*)&clientAddr, &addrLen);
-						submit_client_to_handler(client, clientAddr,
-						                         events[i].data.fd == tcp_socket ? SOCK_STREAM : SOCK_DGRAM);
-					}
-				}
-			}
-		}
-#endif
-#endif
-		CLOSE(tcp_socket);
-		CLOSE(udp_socket);
-		tcp_socket = udp_socket = INVALID_SOCKET;
 	}
 
 	server::~server() {}
 }  // namespace boot
+
+#include <boot_server/server_start/linux.h>
+#include <boot_server/server_start/mac.h>
+#include <boot_server/server_start/windows.h>

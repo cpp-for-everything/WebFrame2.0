@@ -9,156 +9,7 @@ namespace protocol
 {
 	void ProtocolManager::bind_to(boot::ClientManager& _clientManager) { clientManager = &_clientManager; }
 
-	void ProtocolManager::handle_tcp_client(SOCKET client, sockaddr_in clientAddr)
-	{
-		std::cout << "TCP message from " << inet_ntoa(clientAddr.sin_addr) << ":" << ntohs(clientAddr.sin_port)
-		          << std::endl;
-		clientManager->update(client, boot::ClientStatus::HANDLING);
-
-		std::string request, headline;
-		constexpr std::size_t capacity = 1024;
-		size_t ind;
-		char data[capacity];
-		int total_recv = 0;
-		int n = 0;
-		do
-		{
-			n = RECV(client, data, capacity, 0);
-			std::cout << "{{{{{{{{\n" << data << "\n}}}}}}}}" << std::endl;
-			if (n <= 0)
-			{
-				break;
-			}
-
-			total_recv += n;
-			request += std::string(data, data + n);
-
-			if ((ind = request.find('\r')) != std::string::npos)
-			{
-				headline = request.substr(0, ind);
-				// break;
-			}
-		} while (n > 0);
-		// std::cout << headline << "\n----------\n" << request << std::endl;
-		if (headline == "PRI * HTTP/2.0")  // http2
-		{
-			std::string response =
-			    "HEADERS\r\n:status: 200\r\ncontent-type: text/plain\r\ncontent-length: "
-			    "13\r\nEND_HEADERS\r\nDATA\r\nHello, World!\r\nEND_STREAM";
-			SEND(client, response.data(), response.size(), 0);
-			clientManager->update(client, boot::ClientStatus::WAITING);
-		}
-		else if (headline.find("HTTP/1.1") != std::string::npos)  // http 1.1
-		{
-			std::cout << "----------------------------------\n" << request << std::endl;
-			if (request.find("Connection: close\r\n") != std::string::npos)
-			{
-				{
-					std::string response =
-					    "HTTP/1.1 200 OK\r\nDate: Mon, 27 Jul 2009 12:28:53 GMT\r\nServer: Apache/2.2.14 "
-					    "(Win32)\r\nLast-Modified: Wed, 22 Jul 2009 19:15:56 GMT\r\nContent-Length: "
-					    "88\r\nContent-Type: text/plain\r\nAlt-Svc: h2c=\":8081\"; ma=3600\r\nConnection: "
-					    "close\r\nTransfer-Encoding: chunked\r\n\r\n";
-					{
-						std::time_t end_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-						std::cout << "Trying to send headers for closing connection to client at "
-						          << std::ctime(&end_time) << std::endl;
-					}
-					SEND(client, response.data(), response.size(), 0);
-					{
-						std::time_t end_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-						std::cout << "Sent headers for closing connection to client at " << std::ctime(&end_time)
-						          << std::endl;
-					}
-				}
-				CLOSE(client);
-			}
-			{
-				std::string response =
-				    "HTTP/1.1 200 OK\r\nDate: Mon, 27 Jul 2009 12:28:53 GMT\r\nServer: Apache/2.2.14 "
-				    "(Win32)\r\nLast-Modified: Wed, 22 Jul 2009 19:15:56 GMT\r\nContent-Length: "
-				    "88\r\n";
-				{
-					std::time_t end_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-					std::cout << "Trying to send first chunk of headers to client at " << std::ctime(&end_time)
-					          << std::endl;
-				}
-				SEND(client, response.data(), response.size(), 0);
-				{
-					std::time_t end_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-					std::cout << "Sent first chunk of headers to client at " << std::ctime(&end_time) << std::endl;
-				}
-			}
-			{
-				std::string response =
-				    "Content-Type: "
-				    "text/plain\r\nAlt-Svc: h2c=\":8081\"; ma=3600\r\nConnection: "
-				    "keep-alive\r\nTransfer-Encoding: chunked\r\n\r\n";
-				{
-					std::time_t end_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-					std::cout << "Trying to send second chunk of headers to client at " << std::ctime(&end_time)
-					          << std::endl;
-				}
-				SEND(client, response.data(), response.size(), 0);
-				{
-					std::time_t end_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-					std::cout << "Sent second chunk of headers to client at " << std::ctime(&end_time) << std::endl;
-				}
-			}
-			{
-				std::string response = "5\r\nHello\r\n";
-				{
-					std::time_t end_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-					std::cout << "Trying to send first chunk of body to client at " << std::ctime(&end_time)
-					          << std::endl;
-				}
-				SEND(client, response.data(), response.size(), 0);
-				{
-					std::time_t end_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-					std::cout << "Sent first chunk of body to client at " << std::ctime(&end_time) << std::endl;
-				}
-			}
-			{
-				std::string response = "8\r\n, world!\r\n";
-				{
-					std::time_t end_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-					std::cout << "Trying to send second chunk of body to client at " << std::ctime(&end_time)
-					          << std::endl;
-				}
-				SEND(client, response.data(), response.size(), 0);
-				{
-					std::time_t end_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-					std::cout << "Sent second chunk of body to client at " << std::ctime(&end_time) << std::endl;
-				}
-			}
-			{
-				std::string response = "0\r\n\r\n";
-				{
-					std::time_t end_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-					std::cout << "Trying to send EoF chunk to client at " << std::ctime(&end_time) << std::endl;
-				}
-				SEND(client, response.data(), response.size(), 0);
-				{
-					std::time_t end_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-					std::cout << "Sent EoF chunk to client at " << std::ctime(&end_time) << std::endl;
-				}
-			}
-			clientManager->update(client, boot::ClientStatus::WAITING);
-		}
-		else if (headline.find("HTTP/1.0") != std::string::npos)
-		{  // http 1.0
-			std::string response =
-			    "HTTP/1.1 200 OK\r\nDate: Mon, 27 Jul 2009 12:28:53 GMT\r\nServer: Apache/2.2.14 "
-			    "(Win32)\r\nLast-Modified: Wed, 22 Jul 2009 19:15:56 GMT\r\nContent-Length: "
-			    "88\r\nContent-Type: "
-			    "text/html\r\nAlt-Svc: h2c=\":8081\"; ma=3600\r\nConnection: "
-			    "keep-alive\r\nTransfer-Encoding: chunked\r\n\r\nHello, world!\r\n";
-			SEND(client, response.data(), response.size(), 0);
-			clientManager->update(client, boot::ClientStatus::CLOSING);
-		}
-	}
-
-	void ProtocolManager::handle_udp_client(SOCKET client, sockaddr_in clientAddr)
+	void ProtocolManager::handle_tcp_client(SOCKET client)
 	{
 		clientManager->update(client, boot::ClientStatus::HANDLING);
 
@@ -171,7 +22,6 @@ namespace protocol
 		do
 		{
 			n = RECV(client, data, capacity, 0);
-			std::cout << "{{{{{{{{\n" << data << "\n}}}}}}}}" << std::endl;
 			if (n <= 0)
 			{
 				break;
@@ -179,15 +29,9 @@ namespace protocol
 
 			total_recv += n;
 			request += std::string(data, data + n);
-
-			if ((ind = request.find('\r')) != std::string::npos)
-			{
-				headline = request.substr(0, ind);
-				// break;
-			}
 		} while (n > 0);
-		// std::cout << headline << "\n----------\n" << request << std::endl;
-		if (headline == "PRI * HTTP/2.0")  // http2
+		std::cout << ">\n" << request << "\n<" << std::endl;
+		if (HTTP2.check(request))
 		{
 			std::string response =
 			    "HEADERS\r\n:status: 200\r\ncontent-type: text/plain\r\ncontent-length: "
@@ -195,114 +39,69 @@ namespace protocol
 			SEND(client, response.data(), response.size(), 0);
 			clientManager->update(client, boot::ClientStatus::WAITING);
 		}
-		else if (headline.find("HTTP/1.1") != std::string::npos)  // http 1.1
+		else if (HTTP11.check(request))  // http 1.1
 		{
 			std::cout << "----------------------------------\n" << request << std::endl;
 			if (request.find("Connection: close\r\n") != std::string::npos)
 			{
-				{
-					std::string response =
-					    "HTTP/1.1 200 OK\r\nDate: Mon, 27 Jul 2009 12:28:53 GMT\r\nServer: Apache/2.2.14 "
-					    "(Win32)\r\nLast-Modified: Wed, 22 Jul 2009 19:15:56 GMT\r\nContent-Length: "
-					    "88\r\nContent-Type: text/plain\r\nAlt-Svc: h2c=\":8081\"; ma=3600\r\nConnection: "
-					    "close\r\nTransfer-Encoding: chunked\r\n\r\n";
-					{
-						std::time_t end_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-						std::cout << "Trying to send headers for closing connection to client at "
-						          << std::ctime(&end_time) << std::endl;
-					}
-					SEND(client, response.data(), response.size(), 0);
-					{
-						std::time_t end_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-						std::cout << "Sent headers for closing connection to client at " << std::ctime(&end_time)
-						          << std::endl;
-					}
-				}
-				CLOSE(client);
+				std::unordered_map<std::string, std::string> headers = {
+				    {"Date", "Mon, 27 Jul 2009 12:28:53 GMT"},
+				    {"Server", "Apache/2.2.14 (Win32)"},
+				    {"Last-Modified", "Wed, 22 Jul 2009 19:15:56 GMT"},
+				    {"Content-Length", "0"},
+				    {"Content-Type", "text/plain"},
+				    {"Alt-Svc", "h2c=\":8081\"; ma=3600"},
+				    {"Connection", "close"},
+				    {"Transfer-Encoding", "chunked"},
+				};
+				HTTP11.sendData(client, HTTP11.STATUS_CODE, (void*)200);
+				HTTP11.sendData(client, HTTP11.HEADERS, &headers);
+				HTTP11.sendData(client, HTTP11.BODY, nullptr);
+				clientManager->update(client, boot::ClientStatus::CLOSING);
+				return;
 			}
+			else
 			{
 				std::string response =
-				    "HTTP/1.1 200 OK\r\nDate: Mon, 27 Jul 2009 12:28:53 GMT\r\nServer: Apache/2.2.14 "
-				    "(Win32)\r\nLast-Modified: Wed, 22 Jul 2009 19:15:56 GMT\r\nContent-Length: "
-				    "88\r\n";
-				{
-					std::time_t end_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-					std::cout << "Trying to send first chunk of headers to client at " << std::ctime(&end_time)
-					          << std::endl;
-				}
-				SEND(client, response.data(), response.size(), 0);
-				{
-					std::time_t end_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-					std::cout << "Sent first chunk of headers to client at " << std::ctime(&end_time) << std::endl;
-				}
+				    "<link rel=\"icon\" type=\"image/x-icon\" href=\"/images/favicon.ico\">\nHello, World!";
+				std::unordered_map<std::string, std::string> headers = {
+				    {"Date", "Mon, 27 Jul 2009 12:28:53 GMT"},
+				    {"Server", "Apache/2.2.14 (Win32)"},
+				    {"Last-Modified", "Wed, 22 Jul 2009 19:15:56 GMT"},
+				    {"Content-Length", std::to_string(response.size())},
+				    {"Content-Type", "text/html"},
+				    {"Alt-Svc", "h2c=\":8081\"; ma=3600"},
+				    {"Connection", "keep-alive"},
+				    {"Transfer-Encoding", "chunked"},
+				};
+				HTTP11.sendData(client, HTTP11.STATUS_CODE, (void*)200);
+				HTTP11.sendData(client, HTTP11.HEADERS, &headers);
+				HTTP11.sendData(client, HTTP11.BODY, &response);
+				clientManager->update(client, boot::ClientStatus::WAITING);
 			}
-			{
-				std::string response =
-				    "Content-Type: "
-				    "text/plain\r\nAlt-Svc: h2c=\":8081\"; ma=3600\r\nConnection: "
-				    "keep-alive\r\nTransfer-Encoding: chunked\r\n\r\n";
-				{
-					std::time_t end_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-					std::cout << "Trying to send second chunk of headers to client at " << std::ctime(&end_time)
-					          << std::endl;
-				}
-				SEND(client, response.data(), response.size(), 0);
-				{
-					std::time_t end_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-					std::cout << "Sent second chunk of headers to client at " << std::ctime(&end_time) << std::endl;
-				}
-			}
-			{
-				std::string response = "5\r\nHello\r\n";
-				{
-					std::time_t end_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-					std::cout << "Trying to send first chunk of body to client at " << std::ctime(&end_time)
-					          << std::endl;
-				}
-				SEND(client, response.data(), response.size(), 0);
-				{
-					std::time_t end_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-					std::cout << "Sent first chunk of body to client at " << std::ctime(&end_time) << std::endl;
-				}
-			}
-			{
-				std::string response = "8\r\n, world!\r\n";
-				{
-					std::time_t end_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-					std::cout << "Trying to send second chunk of body to client at " << std::ctime(&end_time)
-					          << std::endl;
-				}
-				SEND(client, response.data(), response.size(), 0);
-				{
-					std::time_t end_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-					std::cout << "Sent second chunk of body to client at " << std::ctime(&end_time) << std::endl;
-				}
-			}
-			{
-				std::string response = "0\r\n\r\n";
-				{
-					std::time_t end_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-					std::cout << "Trying to send EoF chunk to client at " << std::ctime(&end_time) << std::endl;
-				}
-				SEND(client, response.data(), response.size(), 0);
-				{
-					std::time_t end_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-					std::cout << "Sent EoF chunk to client at " << std::ctime(&end_time) << std::endl;
-				}
-			}
-			clientManager->update(client, boot::ClientStatus::WAITING);
 		}
-		else if (headline.find("HTTP/1.0") != std::string::npos)
-		{  // http 1.0
+		else if (headline.find("HTTP/1.0") != std::string::npos) // http 1.0
+		{
 			std::string response =
-			    "HTTP/1.1 200 OK\r\nDate: Mon, 27 Jul 2009 12:28:53 GMT\r\nServer: Apache/2.2.14 "
+			    "HTTP/1.0 200 OK\r\nDate: Mon, 27 Jul 2009 12:28:53 GMT\r\nServer: Apache/2.2.14 "
 			    "(Win32)\r\nLast-Modified: Wed, 22 Jul 2009 19:15:56 GMT\r\nContent-Length: "
 			    "88\r\nContent-Type: "
-			    "text/html\r\nAlt-Svc: h2c=\":8081\"; ma=3600\r\nConnection: "
-			    "keep-alive\r\nTransfer-Encoding: chunked\r\n\r\nHello, world!\r\n";
-			SEND(client, response.data(), response.size(), 0);
+			    "text/html\r\nAlt-Svc: h2c=\":8081\"; ma=3600\r\n\r\nHello, world!\r\n";
+			HTTP1.sendData(client, HTTP1.WHOLE_RESPONSE, &response);
+			clientManager->update(client, boot::ClientStatus::CLOSING);
+		}
+		else
+		{
+			std::string response =
+			    "HTTP/1.0 400 Bad Request\r\nDate: Mon, 27 Jul 2009 12:28:53 GMT\r\nServer: Apache/2.2.14 "
+			    "(Win32)\r\nLast-Modified: Wed, 22 Jul 2009 19:15:56 GMT\r\nContent-Length: "
+			    "88\r\nContent-Type: "
+			    "text/html\r\nAlt-Svc: h2c=\":8081\"; ma=3600\r\n\r\n\r\n";
+			HTTP1.sendData(client, HTTP1.WHOLE_RESPONSE, &response);
 			clientManager->update(client, boot::ClientStatus::CLOSING);
 		}
 	}
+
+	void ProtocolManager::handle_udp_client(SOCKET client) {}
 
 }  // namespace protocol

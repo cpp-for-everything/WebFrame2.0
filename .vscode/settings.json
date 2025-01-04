@@ -103,7 +103,10 @@
         "memory_resource": "cpp",
         "numeric": "cpp",
         "random": "cpp",
-        "ranges": "cpp"
+        "ranges": "cpp",
+        "list": "cpp",
+        "xhash": "cpp",
+        "xtree": "cpp"
     },
     "diffEditor.ignoreTrimWhitespace": false,
     "[cpp]": {
