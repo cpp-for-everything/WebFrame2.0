@@ -4,6 +4,9 @@
 #include <chrono>
 #include <boot_server/platform.h>
 #include <boot_server/server.h>
+#include <protocol_handler/http/1.0.h>
+#include <protocol_handler/http/1.1.h>
+#include <protocol_handler/http/2.0.h>
 
 namespace protocol
 {
@@ -80,7 +83,7 @@ namespace protocol
 				clientManager->update(client, boot::ClientStatus::WAITING);
 			}
 		}
-		else if (headline.find("HTTP/1.0") != std::string::npos) // http 1.0
+		else if (HTTP1.check(request))  // http 1.0
 		{
 			std::string response =
 			    "HTTP/1.0 200 OK\r\nDate: Mon, 27 Jul 2009 12:28:53 GMT\r\nServer: Apache/2.2.14 "
