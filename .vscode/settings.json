@@ -106,7 +106,8 @@
         "ranges": "cpp",
         "list": "cpp",
         "xhash": "cpp",
-        "xtree": "cpp"
+        "xtree": "cpp",
+        "any": "cpp"
     },
     "diffEditor.ignoreTrimWhitespace": false,
     "[cpp]": {
