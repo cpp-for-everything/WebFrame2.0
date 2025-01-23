@@ -5,7 +5,7 @@ int main()
 {
 	try
 	{
-		FileReaderWriter frw;
+		TemporaryFileStringStream frw;
 
 		frw.write("Hello, World!\t");
 		frw.write("This is a temporary file test.");

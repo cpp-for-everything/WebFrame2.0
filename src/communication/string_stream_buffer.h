@@ -13,10 +13,10 @@
 #include <unistd.h>
 #endif
 
-class FileReaderWriter
+class TemporaryFileStringStream
 {
 public:
-	FileReaderWriter() : read_offset_(0), file_size_(0), last_chunk_size_(0)
+	TemporaryFileStringStream() : read_offset_(0), file_size_(0), last_chunk_size_(0)
 	{
 #if defined(_WIN32)
 		char temp_path[MAX_PATH];
@@ -51,10 +51,11 @@ public:
 		allocation_granularity_ = sys_info.dwAllocationGranularity;
 
 #else
-        allocation_granularity_ = sysconf(_SC_PAGESIZE);
-        if (allocation_granularity_ <= 0) {
-            throw std::runtime_error("Failed to retrieve allocation granularity");
-        }
+		allocation_granularity_ = sysconf(_SC_PAGESIZE);
+		if (allocation_granularity_ <= 0)
+		{
+			throw std::runtime_error("Failed to retrieve allocation granularity");
+		}
 		// Generate a temp file and open it
 		char temp_filename[] = "/tmp/tmpfileXXXXXX";
 		fd_ = mkstemp(temp_filename);
@@ -65,17 +66,18 @@ public:
 
 		filename_ = temp_filename;
 		unlink(temp_filename);  // Ensure the file is removed when closed
-		
+
 		// Get the system page size
-        page_size_ = sysconf(_SC_PAGESIZE);
-        if (page_size_ <= 0) {
-            throw std::runtime_error("Failed to retrieve page size");
-        }
+		page_size_ = sysconf(_SC_PAGESIZE);
+		if (page_size_ <= 0)
+		{
+			throw std::runtime_error("Failed to retrieve page size");
+		}
 #endif
 		update_file_size();
 	}
 
-	~FileReaderWriter()
+	~TemporaryFileStringStream()
 	{
 #if defined(_WIN32)
 		if (mapped_data_)
@@ -86,7 +88,12 @@ public:
 		{
 			CloseHandle(mapping_handle_);
 		}
-		CloseHandle(file_handle_);
+		if (file_handle_ != INVALID_HANDLE_VALUE)
+		{
+			CloseHandle(file_handle_);
+		}
+		// Delete the temporary file explicitly (if needed)
+		DeleteFileA(filename_.c_str());
 #else
 		if (mapped_data_)
 		{
@@ -163,24 +170,26 @@ public:
 		return chunk;
 
 #else
-		  // Unmap the previous mapping if necessary
-        if (mapped_data_) {
-            munmap(mapped_data_, last_chunk_size_);
-        }
+		// Unmap the previous mapping if necessary
+		if (mapped_data_)
+		{
+			munmap(mapped_data_, last_chunk_size_);
+		}
 
-        // Map the file
-        mapped_data_ = static_cast<char*>(mmap(nullptr, map_size, PROT_READ, MAP_SHARED, fd_, aligned_offset));
-        if (mapped_data_ == MAP_FAILED) {
-            perror("mmap failed");
-            throw std::runtime_error("Failed to map file");
-        }
+		// Map the file
+		mapped_data_ = static_cast<char*>(mmap(nullptr, map_size, PROT_READ, MAP_SHARED, fd_, aligned_offset));
+		if (mapped_data_ == MAP_FAILED)
+		{
+			perror("mmap failed");
+			throw std::runtime_error("Failed to map file");
+		}
 
-        // Update offsets and sizes
-        std::string_view chunk(mapped_data_ + alignment_diff, chunk_size);
-        read_offset_ += chunk_size;
-        last_chunk_size_ = map_size;
+		// Update offsets and sizes
+		std::string_view chunk(mapped_data_ + alignment_diff, chunk_size);
+		read_offset_ += chunk_size;
+		last_chunk_size_ = map_size;
 
-        return chunk;
+		return chunk;
 #endif
 	}
 
@@ -200,7 +209,7 @@ private:
 	}
 
 	std::string filename_;
-    size_t page_size_;
+	size_t page_size_;
 	size_t read_offset_;
 	size_t file_size_;
 	size_t last_chunk_size_;

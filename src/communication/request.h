@@ -2,6 +2,7 @@
 #include <string_view>
 #include <any>
 #include <condition_variable>
+#include "string_stream_buffer.h"
 #ifndef REQUEST_H
 #define REQUEST_H
 
@@ -12,6 +13,7 @@ namespace protocol
 		std::string_view pathname;
 		std::unordered_map<std::string_view, std::any> query_params;
 		std::unordered_map<std::string_view, std::any> headers;
+		TemporaryFileStringStream body;
 
 	public:
 		enum class processing_stages : unsigned char
