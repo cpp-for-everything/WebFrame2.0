@@ -2,6 +2,7 @@
 #define PROTOCOL_HANDLER_H
 
 #include <boot_server/protocol_manager.h>
+#include <protocol_handler/abstract/protocol.h>
 #include <protocol_handler/http/common/status_code.h>
 #include <unordered_map>
 #include <stdexcept>

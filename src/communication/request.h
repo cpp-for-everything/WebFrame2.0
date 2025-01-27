@@ -10,12 +10,12 @@ namespace protocol
 {
 	class Request
 	{
-		std::string_view pathname;
-		std::unordered_map<std::string_view, std::any> query_params;
-		std::unordered_map<std::string_view, std::any> headers;
+	public:
+		std::string pathname;
+		std::unordered_map<std::string, std::any> query_params;
+		std::unordered_map<std::string, std::any> headers;
 		TemporaryFileStringStream body;
 
-	public:
 		enum class processing_stages : unsigned char
 		{
 			not_started = 0,
@@ -26,6 +26,7 @@ namespace protocol
 			done
 		};
 	};
+
 	class RequestInProcessing
 	{
 		Request r;

@@ -16,7 +16,7 @@ if(DOC)
     find_package(Doxygen REQUIRED)
 
     # Define the Doxygen configuration file
-    set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
+    set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/doxygen/Doxyfile.in)
     set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
 
     # Configure Doxygen
@@ -37,12 +37,18 @@ if(DOC)
     )
 endif()
 
+# Avoid warning about DOWNLOAD_EXTRACT_TIMESTAMP in CMake 3.24:
+if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
+    cmake_policy(SET CMP0135 NEW)
+endif()
+
 # Add nghttp2 submodule
 add_subdirectory(external/nghttp2)
+add_subdirectory(external/RegexMatcher)
 
 # Include nghttp2 headers
 include_directories(external/nghttp2/lib/includes)
 
 add_subdirectory(src/boot_server)
 add_subdirectory(src/protocol_handler)
-add_subdirectory(test/playground)
+add_subdirectory(test/)

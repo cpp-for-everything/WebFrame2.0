@@ -1,3 +1,6 @@
+#ifndef STRING_STREAM_BUFFER_H
+#define STRING_STREAM_BUFFER_H
+
 #include <fstream>
 #include <string>
 #include <string_view>
@@ -103,13 +106,13 @@ public:
 #endif
 	}
 
-	void write(const std::string& data)
+	void write(std::string_view data)
 	{
 		std::lock_guard<std::mutex> lock(write_mutex_);
 #if defined(_WIN32)
 		SetFilePointer(file_handle_, 0, nullptr, FILE_END);  // Move to the end of the file
 		DWORD written;
-		if (!WriteFile(file_handle_, data.c_str(), static_cast<DWORD>(data.size()), &written, nullptr))
+		if (!WriteFile(file_handle_, data.data(), static_cast<DWORD>(data.size()), &written, nullptr))
 		{
 			throw std::runtime_error("Failed to write to file");
 		}
@@ -132,7 +135,7 @@ public:
 			return {};  // No more data to read
 		}
 
-		size_t map_size = std::min(chunk_size, file_size_ - read_offset_);
+		size_t map_size = (std::min)(chunk_size, file_size_ - read_offset_);
 
 		size_t aligned_offset = (read_offset_ / allocation_granularity_) * allocation_granularity_;
 		size_t alignment_diff = read_offset_ - aligned_offset;
@@ -226,3 +229,5 @@ private:
 	char* mapped_data_;
 #endif
 };
+
+#endif  // STRING_STREAM_BUFFER_H

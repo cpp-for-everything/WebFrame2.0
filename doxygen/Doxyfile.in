@@ -58,17 +58,29 @@ UML_LIMIT_NUM_FIELDS   = 1000
 GENERATE_HTML          = YES
 HTML_OUTPUT            = html
 HTML_FILE_EXTENSION    = .html
-HTML_COLORSTYLE_HUE    = 220
-HTML_COLORSTYLE_SAT    = 100
-HTML_COLORSTYLE_GAMMA  = 80
+HTML_COLORSTYLE_HUE    = 209
+HTML_COLORSTYLE_SAT    = 255
+HTML_COLORSTYLE_GAMMA  = 113
 HTML_DYNAMIC_MENUS     = YES
 HTML_DYNAMIC_SECTIONS  = YES
-HTML_EXTRA_STYLESHEET  =
-HTML_EXTRA_FILES       =
+HTML_EXTRA_STYLESHEET  = @CMAKE_SOURCE_DIR@/doxygen/doxygen-awesome-css/doxygen-awesome.css \
+                        @CMAKE_SOURCE_DIR@/doxygen/doxygen-awesome-css/doxygen-awesome-sidebar-only.css \
+                        @CMAKE_SOURCE_DIR@/doxygen/doxygen-awesome-css/doxygen-awesome-sidebar-only-darkmode-toggle.css
+HTML_EXTRA_FILES       = @CMAKE_SOURCE_DIR@/doxygen/doxygen-awesome-css/doxygen-awesome-darkmode-toggle.js \
+                        @CMAKE_SOURCE_DIR@/doxygen/doxygen-awesome-css/doxygen-awesome-fragment-copy-button.js \
+                        @CMAKE_SOURCE_DIR@/doxygen/doxygen-awesome-css/doxygen-awesome-paragraph-link.js \
+                        @CMAKE_SOURCE_DIR@/doxygen/doxygen-awesome-css/doxygen-awesome-interactive-toc.js \
+                        @CMAKE_SOURCE_DIR@/doxygen/doxygen-awesome-css/doxygen-awesome-tabs.js
+HTML_HEADER            = @CMAKE_SOURCE_DIR@/doxygen/header.html
+HTML_FOOTER            = @CMAKE_SOURCE_DIR@/doxygen/footer.html
 HTML_INDEX_NUM_ENTRIES = 100
 GENERATE_TREEVIEW      = YES
-TREEVIEW_WIDTH         = 250
+TREEVIEW_WIDTH         = 335
 FORMULA_FONTSIZE       = 10
+DISABLE_INDEX          = NO
+FULL_SIDEBAR           = NO
+HTML_COLORSTYLE        = LIGHT # required with Doxygen >= 1.9.5
+HTML_COPY_CLIPBOARD    = NO
 
 # LaTeX Output
 GENERATE_LATEX         = YES
@@ -89,7 +101,7 @@ LATEX_SOURCE_CODE      = YES
 
 # Additional configurations
 GENERATE_MAN           = NO
-GENERATE_XML           = NO
+GENERATE_XML           = YES
 GENERATE_DOCBOOK       = NO
 GENERATE_AUTOGEN_DEF   = NO
 GENERATE_PERLMOD       = NO
@@ -108,7 +120,7 @@ QT_AUTOBRIEF           = YES
 MULTILINE_CPP_IS_BRIEF = NO
 INLINE_SIMPLE_STRUCTS  = YES
 FULL_PATH_NAMES        = YES
-STRIP_FROM_PATH        =
+STRIP_FROM_PATH        = @CMAKE_SOURCE_DIR@
 STRIP_FROM_INC_PATH    =
 STRIP_CODE_COMMENTS    = NO
 REFERENCED_BY_RELATION = YES
@@ -119,7 +131,7 @@ VERBATIM_HEADERS       = YES
 EXAMPLE_PATH           =
 EXAMPLE_PATTERNS       =
 EXAMPLE_RECURSIVE      = NO
-DOT_IMAGE_FORMAT       = png
+DOT_IMAGE_FORMAT       = svg
 DOT_CLEANUP            = YES
 PLANTUML_JAR_PATH      =
 PLANTUML_CFG_FILE      =

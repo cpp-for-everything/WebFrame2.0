@@ -9,6 +9,7 @@ namespace protocol
 	class Response
 	{
 		std::unordered_map<std::string_view, std::any> headers;
+		TemporaryFileStringStream body;
 	};
 }  // namespace protocol
 
