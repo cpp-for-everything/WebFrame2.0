@@ -42,13 +42,15 @@ if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
     cmake_policy(SET CMP0135 NEW)
 endif()
 
-# Add nghttp2 submodule
-add_subdirectory(external/nghttp2)
-add_subdirectory(external/RegexMatcher)
+set(BUILD_SHARED_LIBS OFF)
+
+add_subdirectory(external)
 
 # Include nghttp2 headers
 include_directories(external/nghttp2/lib/includes)
 
 add_subdirectory(src/boot_server)
 add_subdirectory(src/protocol_handler)
+
+enable_testing()
 add_subdirectory(test/)
