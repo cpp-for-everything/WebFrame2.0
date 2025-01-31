@@ -157,6 +157,20 @@ namespace protocol
 			 * @param chunk the incoming chunk
 			 */
 			virtual void process_chunk(std::string_view chunk) = 0;
+
+			/**
+			 * @brief Get the request object
+			 *
+			 * @return std::shared_ptr<Request> the request object
+			 */
+			virtual std::shared_ptr<Request> get_request() const final { return request; }
+
+			/**
+			 * @brief Get the response object
+			 *
+			 * @return std::shared_ptr<Response> the response object
+			 */
+			virtual std::shared_ptr<Response> get_response() const final { return response; }
 		};
 
 	}  // namespace abstract

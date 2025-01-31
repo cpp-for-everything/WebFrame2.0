@@ -43,14 +43,13 @@ if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
 endif()
 
 set(BUILD_SHARED_LIBS OFF)
+set(BUILD_STATIC_LIBS ON)
 
 add_subdirectory(external)
 
-# Include nghttp2 headers
-include_directories(external/nghttp2/lib/includes)
-
 add_subdirectory(src/boot_server)
 add_subdirectory(src/protocol_handler)
+add_subdirectory(src/networking/http2)
 
 enable_testing()
 add_subdirectory(test/)

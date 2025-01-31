@@ -10,7 +10,4 @@ target_link_libraries(HTTP1_test
     gmock_main
 )
 
-# Enable Catch2 test discovery
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/external/Catch2/extras")
-include(Catch)
-catch_discover_tests(HTTP1_test)
+add_test(NAME HTTP1_test COMMAND HTTP1_test)

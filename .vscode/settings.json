@@ -108,7 +108,12 @@
         "xhash": "cpp",
         "xtree": "cpp",
         "any": "cpp",
-        "regex": "cpp"
+        "regex": "cpp",
+        "csignal": "cpp",
+        "hash_map": "cpp",
+        "hash_set": "cpp",
+        "strstream": "cpp",
+        "valarray": "cpp"
     },
     "diffEditor.ignoreTrimWhitespace": false,
     "[cpp]": {

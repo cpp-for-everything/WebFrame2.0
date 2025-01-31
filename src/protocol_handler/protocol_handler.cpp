@@ -5,7 +5,7 @@
 #include <boot_server/platform.h>
 #include <boot_server/server.h>
 #include <protocol_handler/http/1.0.h>
-// #include <protocol_handler/http/1.1.h>
+#include <protocol_handler/http/1.1.h>
 // #include <protocol_handler/http/2.0.h>
 
 namespace protocol

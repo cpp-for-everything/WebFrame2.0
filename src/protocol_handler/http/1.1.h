@@ -1,82 +1,312 @@
 #include <boot_server/protocol_manager.h>
+#include <protocol_handler/abstract/protocol.h>
 #include <protocol_handler/http/common/status_code.h>
 #include <stdexcept>
-#include <sstream>
-#include <format>
 
 namespace protocol
 {
-	class : public abstract::Protocol
+	class HTTP1_1 : public abstract::Protocol
 	{
 	public:
+		class HTTPProtocolParser;
+
 		enum Flags : size_t
 		{
-			STATUS_CODE = 1 << 0,
-			HEADERS = STATUS_CODE << 1,
-			BODY = HEADERS << 1,
+			WHOLE_RESPONSE = 1 << 0
 		};
+
+		virtual std::shared_ptr<ProtocolParser> get_praser() override final;
+
 		virtual bool check(const std::string& request) final
 		{
-			return request.find(" HTTP/1.1\r\n") != std::string::npos;
+			return request.find(" HTTP/1.0\r\n") != std::string::npos;
 		}
-		virtual void sendData(SOCKET client, size_t flags, void* response) final
+
+		virtual void send_data(SOCKET client, size_t flags, std::shared_ptr<ProtocolParser> request_data) override final
 		{
-			if (flags == Flags::STATUS_CODE)
+			if (flags != Flags::WHOLE_RESPONSE)
 			{
-				const size_t status_code = reinterpret_cast<size_t>(response);
-				std::string status_line =
-				    "HTTP/1.1 " + std::to_string(status_code) + " " + http::status_message[status_code] + "\r\n";
-				SEND(client, status_line.c_str(), status_line.size(), 0);
+				throw std::runtime_error("HTTP/1.0 sends only whole responses. Chunked responses are not allowed.");
 			}
-			else if (flags == Flags::HEADERS)
-			{
-				if (response != nullptr)
-				{
-					const std::unordered_map<std::string, std::string>* headers =
-					    static_cast<const std::unordered_map<std::string, std::string>*>(response);
-					std::stringstream ss;
-					for (const auto& header : *headers)
-					{
-						ss << header.first << ":" << header.second << "\r\n";
-						SEND(client, ss.str().c_str(), ss.str().size(), 0);
-						ss.str("");
-					}
-					SEND(client, "\r\n", 2, 0);
-				}
-				else
-				{
-					SEND(client, "\r\n\r\n", 2, 0);
-				}
-			}
-			else if (flags == Flags::BODY)
-			{
-				if (response != nullptr)
-				{
-					const std::string* body = static_cast<const std::string*>(response);
-					for (size_t i = 0; i < body->size(); i += 1024)
-					{
-						if (i + 1024 <= body->size())
-						{
-							SEND(client, "400\r\n", 5, 0);
-							SEND(client, body->c_str() + i, 1024, 0);
-							SEND(client, "\r\n", 2, 0);
-						}
-						else
-						{
-							std::string chunk_size = std::format("{:x}", (body->size() - i)) + "\r\n";
-							SEND(client, chunk_size.c_str(), chunk_size.size(), 0);
-							SEND(client, body->c_str() + i, body->size() - i, 0);
-							SEND(client, "\r\n", 2, 0);
-						}
-					}
-				}
-				SEND(client, "0\r\n\r\n", 5, 0);
-			}
-			else
-			{
-				throw std::runtime_error("Invalid flags for the type of data sent via HTTP/1.1.");
-			}
+			// SEND(client, static_cast<const std::string*>(request_data->)->c_str(),
+			//      static_cast<const std::string*>(response)->size(), 0);
 			return;
 		}
-	} HTTP11;
+	};
+
+	class HTTP1_1::HTTPProtocolParser : public abstract::Protocol::ProtocolParser
+	{
+	private:
+		static constexpr std::string_view criteria = " HTTP/1.0\r\n";
+		size_t criteria_matched_to;
+		std::string key, value;  // for pathname and body only key is being used
+
+		enum MessageElements
+		{
+			pathname,
+			query_string_key,
+			query_string_value,
+			header_key,
+			header_value,
+			body
+		} current_element;
+
+	public:
+		HTTPProtocolParser()
+		    : criteria_matched_to(0), current_element(MessageElements::pathname), key(), value(), ProtocolParser()
+		{
+		}
+
+		// static std::string transform(std::string x)
+		// {
+		//	for (size_t i = 0; i < x.size(); i++)
+		//	{
+		//		if (x[i] == '\r')
+		//			x = x.substr(0, i) + "\\r" + x.substr(i + 1);
+		//		else if (x[i] == '\n')
+		//			x = x.substr(0, i) + "\\n" + x.substr(i + 1);
+		//	}
+		//	return x;
+		// }
+
+		/**
+		 * @brief Continues the processing of the request using the incoming chunk
+		 *
+		 * @param chunk the incoming chunk
+		 */
+		virtual void process_chunk(std::string_view chunk)
+		{
+			size_t i = 0;
+			ParsingState current_state = get_state();
+			bool save_parsed_info = false, skip_current_symbol = false, move_to_body = false;
+
+			if (current_state == ParsingState::NOT_STARTED)
+			{
+				update_state(ParsingState::PROCESSING);
+				current_state = ParsingState::PROCESSING;
+			}
+
+			for (; i < chunk.size(); i++)
+			{
+				if (current_state == ParsingState::PROCESSING)  // Not verified protocol yet
+				{
+					if (chunk[i] != criteria[criteria_matched_to])
+					{
+						criteria_matched_to = 0;
+					}
+					else
+					{
+						criteria_matched_to++;
+						if (criteria_matched_to == criteria.size())
+						{
+							update_state(ParsingState::VERIFICATION_SUCCEEDED);
+							current_state = ParsingState::VERIFICATION_SUCCEEDED;
+							switch (current_element)
+							{
+								case MessageElements::pathname:
+								{
+									if (key.size() != 0)
+									{
+										key += chunk[i];
+										key.resize(key.size() - criteria_matched_to);
+									}
+									break;
+								}
+								case MessageElements::query_string_key:
+								{
+									if (key.size() != 0)
+									{
+										key += chunk[i];
+										key.resize(key.size() - criteria_matched_to);
+									}
+								}
+								case MessageElements::query_string_value:
+								{
+									if (value.size() != 0)
+									{
+										value += chunk[i];
+										value.resize(value.size() - criteria_matched_to);
+									}
+									break;
+								}
+								default:
+								{
+									throw "Parsing exception1";
+								}
+							}
+							save_parsed_info = true;
+						}
+					}
+				}
+
+				switch (current_element)
+				{
+					case MessageElements::pathname:
+					{
+						if (chunk[i] == '?')
+						{
+							save_parsed_info = true;
+							skip_current_symbol = true;
+						}
+						break;
+					}
+					case MessageElements::query_string_key:
+					{
+						if (chunk[i] == '=')
+						{
+							save_parsed_info = true;
+							skip_current_symbol = true;
+						}
+						break;
+					}
+					case MessageElements::query_string_value:
+					{
+						if (chunk[i] != '&' && value.size() > 0 && value.back() == '&')
+						{
+							value.pop_back();
+							save_parsed_info = true;
+						}
+						break;
+					}
+					case MessageElements::header_key:
+					{
+						if (chunk[i] == ':')
+						{
+							save_parsed_info = true;
+							skip_current_symbol = true;
+						}
+						else if (chunk[i] == '\n' && key == "\r")  // headers are followed by \r\n\r\n and then the body
+						{
+							skip_current_symbol = true;
+							key.clear();
+							move_to_body = true;
+						}
+						break;
+					}
+					case MessageElements::header_value:
+					{
+						if (chunk[i] == '\n' && value.size() > 0 && value.back() == '\r')
+						{
+							value.pop_back();
+							if (value[0] == ' ') value = value.substr(1);
+							save_parsed_info = true;
+							skip_current_symbol = true;
+						}
+						break;
+					}
+					default:
+					{
+						// body end is not indicated or separated by any specific sequance
+					}
+				}
+
+				// printf(
+				//     "\"%s\" save_parsed_info=%d skip_current_symbol=%d, current_element=%d, criteria_matched_to=%d "
+				//     "move_to_body=%d "
+				//     "key=%s value=%s\n",
+				//     transform(std::string(1, chunk[i])).c_str(), save_parsed_info, skip_current_symbol,
+				//     current_element, criteria_matched_to, move_to_body, transform(key).c_str(),
+				//     transform(value).c_str());
+
+				if (save_parsed_info)
+				{
+					save_parsed_info = false;
+					switch (current_element)
+					{
+						case MessageElements::pathname:
+						{
+							request->pathname = key;
+							if (criteria_matched_to != criteria.size())
+							{
+								if (chunk[i] == '?') current_element = MessageElements::query_string_key;
+							}
+							else
+							{
+								current_element = MessageElements::header_key;
+							}
+							key.clear();
+							break;
+						}
+						case MessageElements::query_string_key:
+						{
+							if (chunk[i] == '=') current_element = MessageElements::query_string_value;
+							break;
+						}
+						case MessageElements::query_string_value:
+						{
+							request->query_params.emplace(key, value);
+							if (criteria_matched_to == criteria.size())
+							{
+								current_element = MessageElements::header_key;
+							}
+							else
+							{
+								current_element = MessageElements::query_string_key;
+							}
+							value.clear();
+							key.clear();
+							break;
+						}
+						case MessageElements::header_key:
+						{
+							current_element = MessageElements::header_value;
+							break;
+						}
+						case MessageElements::header_value:
+						{
+							request->headers.emplace(key, value);
+							current_element = MessageElements::header_key;
+							value.clear();
+							key.clear();
+							break;
+						}
+						case MessageElements::body:
+						{
+							// the chunks are being appended below
+							break;
+						}
+						default:
+						{
+							throw "Parsing exception2";
+						}
+					}
+				}
+
+				if (skip_current_symbol || chunk[i] == '\n')
+				{
+					skip_current_symbol = false;
+					continue;
+				}
+				if (move_to_body)
+				{
+					current_element = MessageElements::body;
+					move_to_body = false;
+					if (chunk[i] == '\r') continue;
+				}
+				switch (current_element)
+				{
+					case MessageElements::pathname:
+					case MessageElements::query_string_key:
+					case MessageElements::header_key:
+						key += chunk[i];
+						break;
+					case MessageElements::query_string_value:
+					case MessageElements::header_value:
+						value += chunk[i];
+						break;
+					case MessageElements::body:
+						request->body.write(chunk.substr(i));  // write the rest of the chunk as body
+						i = chunk.size() - 1;                  // skip the processing of rest of characters
+						break;
+					default:
+						throw "Parsing exception3";
+				}
+			}
+		}
+	};
+
+	std::shared_ptr<abstract::Protocol::ProtocolParser> HTTP1_1::get_praser()
+	{
+		return std::make_shared<HTTPProtocolParser>();
+	}
 }  // namespace protocol
