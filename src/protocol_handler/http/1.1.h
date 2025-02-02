@@ -48,6 +48,7 @@ namespace protocol
 			query_string_value,
 			header_key,
 			header_value,
+			body_length,
 			body
 		} current_element;
 
