@@ -14,10 +14,13 @@ namespace boot
 		if (kq == -1)
 		{
 			std::cerr << "Failed to create kqueue." << std::endl;
-			return -1;
+			return;
 		}
 
-		struct kevent event{}, events[100000];
+		using kevent_t = struct kevent;
+
+		kevent_t event{};
+		kevent_t events[100000];
 
 		EV_SET(&event, tcp_socket, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, NULL);
 		kevent(kq, &event, 1, NULL, 0, NULL);

@@ -157,5 +157,6 @@
     "C_Cpp.autocompleteAddParentheses": true,
     "clang-format.executable.linux": "clang-format-16",
     "clang-format.executable.osx": "clang-format",
+    "C_Cpp.errorSquiggles": "disabled",
     //"clang-format.executable": "clang-format",
 }

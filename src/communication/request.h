@@ -26,6 +26,7 @@ namespace protocol
 			done
 		};
 	};
+
 	class RequestInProcessing
 	{
 		Request r;
