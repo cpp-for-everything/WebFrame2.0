@@ -14,7 +14,7 @@ namespace protocol
 		std::string pathname;
 		std::unordered_map<std::string, std::any> query_params;
 		std::unordered_map<std::string, std::any> headers;
-		TemporaryFileStringStream body;
+		RawTempFileStream body;
 
 		enum class processing_stages : unsigned char
 		{
@@ -25,13 +25,6 @@ namespace protocol
 			body,
 			done
 		};
-	};
-
-	class RequestInProcessing
-	{
-		Request r;
-		Request::processing_stages status;
-		std::condition_variable processing;
 	};
 }  // namespace protocol
 

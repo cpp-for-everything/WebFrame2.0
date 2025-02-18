@@ -13,13 +13,15 @@
 #else
 #include <sys/mman.h>
 #include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #endif
 
-class TemporaryFileStringStream
+class RawTempFileStream
 {
 public:
-	TemporaryFileStringStream() : read_offset_(0), file_size_(0), last_chunk_size_(0)
+	RawTempFileStream() : read_offset_(0), file_size_(0), last_chunk_size_(0)
 	{
 #if defined(_WIN32)
 		char temp_path[MAX_PATH];
@@ -52,7 +54,6 @@ public:
 		SYSTEM_INFO sys_info;
 		GetSystemInfo(&sys_info);
 		allocation_granularity_ = sys_info.dwAllocationGranularity;
-
 #else
 		allocation_granularity_ = sysconf(_SC_PAGESIZE);
 		if (allocation_granularity_ <= 0)
@@ -67,20 +68,19 @@ public:
 			throw std::runtime_error("Failed to create temp file");
 		}
 
+		struct stat fd_stat;
+		fstat(fd_, &fd_stat);
+
 		filename_ = temp_filename;
 		unlink(temp_filename);  // Ensure the file is removed when closed
 
 		// Get the system page size
-		page_size_ = sysconf(_SC_PAGESIZE);
-		if (page_size_ <= 0)
-		{
-			throw std::runtime_error("Failed to retrieve page size");
-		}
+		page_size_ = fd_stat.st_blksize;
 #endif
 		update_file_size();
 	}
 
-	~TemporaryFileStringStream()
+	~RawTempFileStream()
 	{
 #if defined(_WIN32)
 		if (mapped_data_)
@@ -118,7 +118,7 @@ public:
 		}
 #else
 		lseek(fd_, 0, SEEK_END);  // Move to the end of the file
-		if (::write(fd_, data.c_str(), data.size()) == -1)
+		if (::write(fd_, data.data(), data.size()) == -1)
 		{
 			throw std::runtime_error("Failed to write to file");
 		}

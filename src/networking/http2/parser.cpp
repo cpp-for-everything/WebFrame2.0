@@ -12,7 +12,7 @@
 #include <nghttp2/nghttp2.h>
 
 // Simulated class for handling HTTP/2 request body
-class TemporaryFileStringStream
+class RawTempFileStream
 {
 public:
 	void write(std::string_view data) { buffer << data; }
@@ -29,7 +29,7 @@ public:
 	std::string pathname;
 	std::unordered_map<std::string, std::any> query_params;
 	std::unordered_map<std::string, std::any> headers;
-	TemporaryFileStringStream body;
+	RawTempFileStream body;
 };
 
 // Function to parse query parameters from a URL

@@ -48,11 +48,12 @@ namespace boot
 					}
 					else if (events[i].data.fd == udp_socket)  // UDP message sent
 					{
-						submit_client_to_handler(client, SOCK_DGRAM);
+						submit_client_to_handler(events[i].data.fd, SOCK_DGRAM);
 					}
 					else  // TCP client event
 					{
-						submit_client_to_handler(events[i].data.fd, SOCK_STREAM);
+						// TODO: support non-UDP and non-TCP protocols
+						// submit_client_to_handler(events[i].data.fd, SOCK_STREAM);
 					}
 				}
 			}

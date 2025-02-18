@@ -8,7 +8,7 @@ namespace protocol
 {
 	namespace http
 	{
-		static inline std::unordered_map<size_t, std::string> status_message = {
+		static inline std::unordered_map<uint16_t, std::string> status_message = {
 		    {100, "Continue"},
 		    {101, "Switching Protocols"},
 		    {102, "Processing Deprecated"},
